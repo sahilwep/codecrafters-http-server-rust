@@ -1,6 +1,6 @@
 use std::{
     io::{Read, Write},
-    net::{TcpListener, TcpStream}, str::pattern::Pattern,
+    net::{TcpListener, TcpStream},
 };
 
 use std::io::BufRead;
