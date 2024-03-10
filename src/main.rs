@@ -64,16 +64,31 @@ impl HTTPRequest {
 }
 
 fn handel_stream(mut stream: TcpStream) -> () {
-    let request = HTTPRequest::new(&mut stream);
-    println!("Handling Connection");
-    println!("{:?}", request);
-    let response = | request: HTTPRequest | -> &'static [u8] {
-        match request.path.as_str() {
-            "/" => b"HTTP/1.1 200 OK \r\n\r\n",
-            _ => b"HTTP/1.1 404 Not Found\r\n\r\n",
+
+    let buf_reader = BufReader::new(&mut stream);
+    let request_line = buf_reader.lines().next().unwrap().unwrap();
+    let request_items: Vec<&str> = request_line.split_whitespace().collect();
+    let method = request_items[0];
+    let path = request_items[1];
+    let version = request_items[2];
+    println!("Method: {}, path: {}, version: {}", method, path, version);    
+    match path {
+        "/" => stream
+            .write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())
+            .unwrap(),
+        _ if path.starts_with("/echo/") => {
+            let text = path.split("/echo/").skip(1).collect::<String>();
+            let res = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}",
+                text.len(),
+                text
+            );
+            stream.write_all(res.as_bytes()).unwrap();
         }
-    }(request.unwrap());
-    let _ = stream.write(response).unwrap();
+        _ => stream
+            .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
+            .unwrap(),
+    }
 }
 
 
