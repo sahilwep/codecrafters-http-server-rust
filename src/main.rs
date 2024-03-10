@@ -6,6 +6,7 @@ use std::{
 use std::io::BufRead;
 use std::io::BufReader;
 
+use rand::seq::SliceRandom; // Add this import for random string generation
 use bytes::Bytes;
 use tokio::stream;
 
@@ -44,7 +45,7 @@ impl HTTPRequest {
 
         let http_request: Vec<String> = buf_reader
             .lines()
-            .map(| result| result.unwrap())
+            .map(|result| result.unwrap())
             .take_while(|line| !line.is_empty())
             .collect();
 
@@ -61,27 +62,34 @@ impl HTTPRequest {
     }
 }
 
-fn handel_stream(mut stream: TcpStream) -> () {
-    let request = HTTPRequest::new(&mut stream);
-    println!("Handling Connection");
-    println!("{:?}", request);
-    let response = | request: HTTPRequest | -> &'static [u8] {
-        match request.path.as_str() {
-            "/" => b"HTTP/1.1 200 OK \r\n\r\n",
-            _ => b"HTTP/1.1 404 Not Found\r\n\r\n",
-        }
-    }(request.unwrap());
-    let _ = stream.write(response).unwrap();
+fn handle_stream(mut stream: TcpStream) {
+    if let Some(request) = HTTPRequest::new(&mut stream) {
+        println!("Handling Connection");
+        println!("{:?}", request);
+
+        let response_body = match request.method {
+            HTTPMethod::GET => {
+                // Extract the last segment of the path as the random string
+                let random_string = request.path.split('/').last().unwrap_or_default();
+
+                // Build the response body
+                format!("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}",
+                        random_string.len(),
+                        random_string)
+            }
+            _ => "HTTP/1.1 404 Not Found\r\n\r\n".to_string(),
+        };
+
+        let _ = stream.write(response_body.as_bytes()).unwrap();
+    }
 }
 
-
 fn main() {
-
     let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
-    
+
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => handel_stream(stream),
+            Ok(stream) => handle_stream(stream),
             Err(e) => {
                 println!("error: {}", e);
             }
