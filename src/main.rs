@@ -1,6 +1,7 @@
 use std::{
     io::{Read, Write},
     net::{TcpListener, TcpStream},
+    thread,
 };
 
 use std::io::BufRead;
@@ -77,7 +78,11 @@ fn handel_stream(mut stream: TcpStream) -> () {
 
     // Implementation: returning user-agent version: 
     let user_agent_items: Vec<&str> = user_agent_line.split(": ").collect();
-    let user_agent = user_agent_items[1];
+    let user_agent = if user_agent_items.len() > 1 {
+        user_agent_items[1]
+    } else {
+        ""
+    };
     println!("User agent: {}", user_agent);
     match path {
         "/" => stream
@@ -114,7 +119,12 @@ fn main() {
     
     for stream in listener.incoming() {
         match stream {
-            Ok(stream) => handel_stream(stream),
+            Ok(stream) => {
+                // using threads to handel multiple concurrent connections.
+                thread::spawn(  || {
+                    handel_stream(stream);
+                });
+            }
             Err(e) => {
                 println!("error: {}", e);
             }
