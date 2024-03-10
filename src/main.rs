@@ -64,18 +64,33 @@ impl HTTPRequest {
 }
 
 fn handel_stream(mut stream: TcpStream) -> () {
-
     let buf_reader = BufReader::new(&mut stream);
-    let request_line = buf_reader.lines().next().unwrap().unwrap();
-    let request_items: Vec<&str> = request_line.split_whitespace().collect();
+    let mut buf_reader_lines = buf_reader.lines();
+    let request_line = buf_reader_lines.next().unwrap().unwrap();       // first line: request
+    let _host_line = buf_reader_lines.next().unwrap().unwrap();         // second line: host 
+    let user_agent_line = buf_reader_lines.next().unwrap().unwrap();    // third line: user-agent
+    let request_items: Vec<&str> = request_line.split_whitespace().collect();   
     let method = request_items[0];
     let path = request_items[1];
     let version = request_items[2];
-    println!("Method: {}, path: {}, version: {}", method, path, version);    
+    println!("Method: {}, path: {}, version: {}", method, path, version);
+
+    // Implementation: returning user-agent version: 
+    let user_agent_items: Vec<&str> = user_agent_line.split(": ").collect();
+    let user_agent = user_agent_items[1];
+    println!("User agent: {}", user_agent);
     match path {
         "/" => stream
             .write_all("HTTP/1.1 200 OK\r\n\r\n".as_bytes())
-            .unwrap(),
+            .unwrap(),        
+        "/user-agent" => {
+            let res = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}",
+                user_agent.len(),
+                user_agent
+            );
+            stream.write_all(res.as_bytes()).unwrap();
+        }
         _ if path.starts_with("/echo/") => {
             let text = path.split("/echo/").skip(1).collect::<String>();
             let res = format!(
@@ -85,9 +100,10 @@ fn handel_stream(mut stream: TcpStream) -> () {
             );
             stream.write_all(res.as_bytes()).unwrap();
         }
-        _ => println!("Sending to another scope!"),
+        _ => stream
+            .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
+            .unwrap(),
     }
-    stream.write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes()).unwrap();
 }
 
 
