@@ -3,10 +3,10 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use std::io::{BufRead, BufReader};
+use std::io::BufRead;
+use std::io::BufReader;
 
 use bytes::Bytes;
-use rand::seq::SliceRandom; // Import for generating a random string
 use tokio::stream;
 
 #[derive(Debug)]
@@ -62,28 +62,29 @@ impl HTTPRequest {
 }
 
 fn handel_stream(mut stream: TcpStream) -> () {
-    let request = HTTPRequest::new(&mut stream).unwrap();
-    println!("Handling Connection");
-    println!("{:?}", request);
+    if let Some(request) = HTTPRequest::new(&mut stream) {
+        println!("Handling Connection");
+        println!("{:?}", request);
 
-    let response = match request.method {
-        HTTPMethod::GET => {
-            let path_parts: Vec<&str> = request.path.split('/').collect();
-            if path_parts.len() == 3 && path_parts[1] == "echo" {
-                let random_string = path_parts[2];
-                format!(
-                    "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}",
-                    random_string.len(),
-                    random_string
-                )
-            } else {
-                "HTTP/1.1 404 Not Found\r\n\r\n".to_string()
+        let response = match request.method {
+            HTTPMethod::GET => {
+                let path_parts: Vec<&str> = request.path.split('/').collect();
+                if path_parts.len() == 3 && path_parts[1] == "echo" {
+                    let random_string = path_parts[2];
+                    format!(
+                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}",
+                        random_string.len(),
+                        random_string
+                    )
+                } else {
+                    "HTTP/1.1 404 Not Found\r\n\r\n".to_string()
+                }
             }
-        }
-        _ => "HTTP/1.1 404 Not Found\r\n\r\n".to_string(),
-    };
+            _ => "HTTP/1.1 404 Not Found\r\n\r\n".to_string(),
+        };
 
-    let _ = stream.write(response.as_bytes()).unwrap();
+        let _ = stream.write(response.as_bytes()).unwrap();
+    }
 }
 
 fn main() {
