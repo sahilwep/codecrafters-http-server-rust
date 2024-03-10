@@ -6,6 +6,8 @@ use std::{
 use std::io::BufRead;
 use std::io::BufReader;
 
+
+
 use bytes::Bytes;
 use tokio::stream;
 
@@ -44,7 +46,7 @@ impl HTTPRequest {
 
         let http_request: Vec<String> = buf_reader
             .lines()
-            .map(|result| result.unwrap())
+            .map(| result| result.unwrap())
             .take_while(|line| !line.is_empty())
             .collect();
 
@@ -62,34 +64,24 @@ impl HTTPRequest {
 }
 
 fn handel_stream(mut stream: TcpStream) -> () {
-    if let Some(request) = HTTPRequest::new(&mut stream) {
-        println!("Handling Connection");
-        println!("{:?}", request);
-
-        let response = match request.method {
-            HTTPMethod::GET => {
-                let path_parts: Vec<&str> = request.path.split('/').collect();
-                if path_parts.len() == 3 && path_parts[1] == "echo" {
-                    let random_string = path_parts[2];
-                    format!(
-                        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {}\r\n\r\n{}",
-                        random_string.len(),
-                        random_string
-                    )
-                } else {
-                    "HTTP/1.1 404 Not Found\r\n\r\n".to_string()
-                }
-            }
-            _ => "HTTP/1.1 404 Not Found\r\n\r\n".to_string(),
-        };
-
-        let _ = stream.write(response.as_bytes()).unwrap();
-    }
+    let request = HTTPRequest::new(&mut stream);
+    println!("Handling Connection");
+    println!("{:?}", request);
+    let response = | request: HTTPRequest | -> &'static [u8] {
+        match request.path.as_str() {
+            "/" => b"HTTP/1.1 200 OK \r\n\r\n",
+            _ => b"HTTP/1.1 404 Not Found\r\n\r\n",
+        }
+    }(request.unwrap());
+    let _ = stream.write(response).unwrap();
 }
 
-fn main() {
-    let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
 
+
+fn main() {
+
+    let listener = TcpListener::bind("127.0.0.1:4221").unwrap();
+    
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => handel_stream(stream),
