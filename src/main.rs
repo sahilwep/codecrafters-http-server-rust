@@ -85,10 +85,9 @@ fn handel_stream(mut stream: TcpStream) -> () {
             );
             stream.write_all(res.as_bytes()).unwrap();
         }
-        _ => stream
-            .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
-            .unwrap(),
+        _ => println!("Sending to another scope!"),
     }
+    stream.write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes()).unwrap();
 }
 
 
