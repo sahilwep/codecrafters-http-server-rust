@@ -3,6 +3,7 @@ use std::{
     net::{TcpListener, TcpStream},
     thread,
 };
+use std::{fs::File, path::Path};
 
 use std::io::BufRead;
 use std::io::BufReader;
@@ -96,6 +97,28 @@ fn handel_stream(mut stream: TcpStream) -> () {
             );
             stream.write_all(res.as_bytes()).unwrap();
         }
+        _ if path.starts_with("/files/") => {
+            let args = parse_args();
+            let file = path.replace("/files/", "");
+            let directory = args.directory.clone().unwrap();
+            if args.directory.is_none() {
+                stream
+                    .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
+                    .unwrap();
+            } else if !dir_exists(directory.as_str()) {
+                stream
+                    .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
+                    .unwrap();
+            } else if !file_exists(format!("{}{}", directory.as_str(), file.as_str()).as_str()) {
+                stream
+                    .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
+                    .unwrap();
+            } else {
+                let contents = read_file(format!("{}{}", directory, file.as_str()).as_str());
+                let res = format!("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\n\r\n{}", contents.len(), contents);
+                stream.write_all(res.as_bytes()).unwrap();
+            }
+        }
         _ if path.starts_with("/echo/") => {
             let text = path.split("/echo/").skip(1).collect::<String>();
             let res = format!(
@@ -108,6 +131,56 @@ fn handel_stream(mut stream: TcpStream) -> () {
         _ => stream
             .write_all("HTTP/1.1 404 Not Found\r\n\r\n".as_bytes())
             .unwrap(),
+    }
+}
+
+
+
+fn dir_exists(path: &str) -> bool {
+    let path = Path::new(path);
+    path.exists() && path.is_dir()
+}
+
+
+fn file_exists(path: &str) -> bool {
+    let path = Path::new(path);
+    path.exists() && path.is_file()
+}
+
+
+fn read_file(path: &str) -> String {
+    let path = Path::new(path);
+    let display = path.display();
+    println!("Reading file: {}", display);
+    let mut file = match File::open(path) {
+        Err(why) => panic!("couldn't open {}: {}", display, why),
+        Ok(file) => file,
+    };
+    let mut buffer = [0 as u8; std::u8::MAX as usize].to_vec();
+    match file.read_to_end(&mut buffer) {
+        Err(why) => panic!("couldn't read {}: {}", display, why),
+        Ok(_) => {
+            let content = String::from_utf8(buffer).unwrap();
+            content.replace("\0", "")
+        }
+    }
+}
+
+
+#[derive(Clone, Debug)]
+struct Args {
+    directory: Option<String>,
+}
+
+
+fn parse_args() -> Args {
+    let args: Vec<String> = std::env::args().collect();
+    if args.len() < 2 {
+        Args { directory: None }
+    } else {
+        Args {
+            directory: Some(args[2].clone()),
+        }
     }
 }
 
