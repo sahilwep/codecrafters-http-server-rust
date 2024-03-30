@@ -1,39 +1,61 @@
-[![progress-banner](https://backend.codecrafters.io/progress/http-server/74e68657-3b52-467e-a2f2-c0547c36314e)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+# CodeCrafters HTTP Server in Rust
 
-This is a starting point for Rust solutions to the
-["Build Your Own HTTP server" Challenge](https://app.codecrafters.io/courses/http-server/overview).
+This is a simple HTTP server implemented in Rust. It's designed to handle basic `HTTP methods` like `GET`, `POST`, `PUT`, and `DELETE`. The server can serve static files, handle simple routing, and demonstrate basic concurrency using Rust's threading capabilities.
 
-[HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol) is the
-protocol that powers the web. In this challenge, you'll build a HTTP/1.1 server
-that is capable of serving multiple clients.
+## Features
 
-Along the way you'll learn about TCP servers,
-[HTTP request syntax](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html),
-and more.
+- Handles basic HTTP methods: `GET`, `POST`, `PUT`, `DELETE`
+- Serves static files
+- Simple routing functionality
+- Demonstrates concurrency using threads
 
-**Note**: If you're viewing this repo on GitHub, head over to
-[codecrafters.io](https://codecrafters.io) to try the challenge.
+## Installation
 
-# Passing the first stage
+1. Clone the repository:
 
-The entry point for your HTTP server implementation is in `src/main.rs`. Study
-and uncomment the relevant code, and push your changes to pass the first stage:
+   ```bash
+   git clone https://github.com/sahilwep/codecrafters-http-server-rust.git
+   ```
 
-```sh
-git add .
-git commit -m "pass 1st stage" # any msg
-git push origin master
-```
+2. Navigate to the project directory:
 
-Time to move on to the next stage!
+   ```bash
+   cd codecrafters-http-server-rust
+   ```
 
-# Stage 2 & beyond
+3. Build the project:
 
-Note: This section is for stages 2 and beyond.
+   ```bash
+   cargo build
+   ```
 
-1. Ensure you have `cargo (1.70)` installed locally
-1. Run `./your_server.sh` to run your program, which is implemented in
-   `src/main.rs`. This command compiles your Rust project, so it might be slow
-   the first time you run it. Subsequent runs will be fast.
-1. Commit your changes and run `git push origin master` to submit your solution
-   to CodeCrafters. Test output will be streamed to your terminal.
+4. Run the server:
+
+   ```bash
+   cargo run
+   ```
+
+## Usage
+
+Once the server is running, you can access it by navigating to `http://localhost:4221` in your web browser. Here are some example routes:
+
+- `/`: Returns a simple "Hello World" message.
+- `/user-agent`: Returns the user-agent string of the client.
+- `/files/{filename}`: Serves the specified file from the server's directory.
+- `/echo/{text}`: Echoes back the provided text.
+
+## Configuration
+
+You can configure the server by modifying the source code directly. The main configuration options include:
+
+- Specifying the port the server listens on (`main()` function).
+- Setting the server's root directory for serving files (`parse_args()` function).
+
+## Dependencies
+
+- `tokio`: Asynchronous runtime for Rust.
+- `bytes`: Utilities for working with bytes.
+- `serde_json`: JSON serialization and deserialization.
+
+
+***
